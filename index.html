@@ -1,168 +1,162 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Semáforo de Ruido</title>
+
   <style>
     body {
-      margin: 0;
+      margin: 2;
       background: black;
-      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      height: 100vh;
-      font-family: Arial, sans-serif;
-    }
-    /* Barra de sonido */
-    #barra-container {
-      width: 80px;
-      height: 80%;
-      background: #333;
-      border-radius: 10px;
-      margin-left: 40px;
-      display: flex;
-      align-items: flex-end;
-      overflow: hidden;
-    }
-    #barra {
-      width: 100%;
-      height: 0%;
-      border-radius: 10px;
-      background: green;
-      transition: height 0.1s, background 0.3s;
-    }
-    /* Imagen central */
-    #imagen-central {
-      flex: 1;
-      text-align: center;
-    }
-    #imagen-central img {
-      max-height: 70vh;
-      max-width: 90%;
-    }
-    /* Semáforo */
-    #semaforo {
-      margin-right: 40px;
-    }
-    #semaforo img {
-      height: 300px;
+      width: 90%;
     }
 
-    /* Botón de inicio (útil para Safari/iOS que exige interacción) */
-    #iniciar {
-      position: fixed;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      background: rgba(0,0,0,.8);
+    .barra {
+      width: 70px;
+      height: 300px;
+      background: #333;
+      border-radius: 20px;
+      overflow: hidden;
     }
-    #iniciar button {
-      font-size: 1.2rem;
-      padding: .8rem 1.2rem;
-      border-radius: .6rem;
-      border: 0;
+
+    #nivel {
+      width: 100%;
+      height: 0%;
+      background: green;
+      transition: height 0.1s linear, background 0.2s linear;
+    }
+
+    .imagen-central img {
+      width: 300px;
+    }
+
+    .semaforo img {
+      width: 300px;
+    }
+
+    /* Botón de iniciar */
+    #contenedorBoton {
+      margin-top: 20px;
+    }
+
+    #btnIniciar {
+      padding: 10px 20px;
+      font-size: 18px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      background: white;
       cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <!-- Barra -->
-  <div id="barra-container">
-    <div id="barra"></div>
+  <div class="container">
+    <!-- Barra de sonido -->
+    <div class="barra">
+      <div id="nivel"></div>
+    </div>
+
+    <!-- Imagen central -->
+    <div class="imagen-central">
+      <img id="imagenCentral" src="imagenes/normal.png" alt="Estado">
+    </div>
+
+    <!-- Semáforo -->
+    <div class="semaforo">
+      <img id="semaforoImg" src="imagenes/semaforo-verde.png" alt="Semáforo">
+    </div>
   </div>
 
-  <!-- Imagen central -->
-  <div id="imagen-central">
-    <img id="imagenEstado" src="imagenes/verde.png" alt="Estado">
-  </div>
-
-  <!-- Semáforo -->
-  <div id="semaforo">
-    <img id="imagenSemaforo" src="imagenes/semaforo_verde.png" alt="Semáforo">
-  </div>
-
-  <!-- Capa para arrancar el audio en dispositivos que lo exigen -->
-  <div id="iniciar" hidden>
-    <button>Iniciar</button>
+  <!-- Botón solo si es necesario -->
+  <div id="contenedorBoton" style="display:none;">
+    <button id="btnIniciar">Iniciar</button>
   </div>
 
   <script>
-    const barra = document.getElementById("barra");
-    const imagenSemaforo = document.getElementById("imagenSemaforo");
-    const imagenEstado = document.getElementById("imagenEstado");
-    const capaInicio = document.getElementById("iniciar");
-    const botonInicio = capaInicio.querySelector("button");
-
-    // Medición más estable: RMS del dominio temporal
-    function calcularRMS(analyser) {
-      const bufferLength = analyser.fftSize;
-      const data = new Uint8Array(bufferLength);
-      analyser.getByteTimeDomainData(data);
-      // Convierte 0..255 a -1..1 y calcula RMS
-      let sum = 0;
-      for (let i = 0; i < bufferLength; i++) {
-        const v = (data[i] - 128) / 128;
-        sum += v * v;
-      }
-      const rms = Math.sqrt(sum / bufferLength); // 0..~1
-      return Math.min(1, rms * 1.8); // ligero “gain”
-    }
+    let audioContext;
+    let analyser;
+    let dataArray;
 
     async function iniciarMicrofono() {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const source = audioContext.createMediaStreamSource(stream);
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 1024;
-      source.connect(analyser);
+      try {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      function actualizar() {
-        const rms = calcularRMS(analyser);         // 0..1
-        const porcentaje = Math.round(rms * 100);  // 0..100
+        const source = audioContext.createMediaStreamSource(stream);
+        analyser = audioContext.createAnalyser();
+        source.connect(analyser);
 
-        // Actualizar barra
-        barra.style.height = porcentaje + "%";
+        dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-        // Colores y estados
-        if (porcentaje < 30) {
-          barra.style.background = "green";
-          imagenSemaforo.src = "imagenes/semaforo_verde.png";
-          imagenEstado.src = "imagenes/verde.png";
-        } else if (porcentaje < 70) {
-          barra.style.background = "yellow";
-          imagenSemaforo.src = "imagenes/semaforo_amarillo.png";
-          imagenEstado.src = "imagenes/amarillo.png";
-        } else {
-          barra.style.background = "red";
-          imagenSemaforo.src = "imagenes/semaforo_rojo.png";
-          imagenEstado.src = "imagenes/rojo.png";
-        }
-
-        requestAnimationFrame(actualizar);
+        medirRuido();
+        document.getElementById("contenedorBoton").style.display = "none"; // ocultar botón
+      } catch (error) {
+        console.error("Error al acceder al micrófono:", error);
       }
-
-      actualizar();
     }
 
-    // Inicio automático; si el navegador exige interacción, mostramos botón
-    (async () => {
+    function medirRuido() {
+      requestAnimationFrame(medirRuido);
+
+      analyser.getByteFrequencyData(dataArray);
+
+      let valores = dataArray.reduce((a, b) => a + b, 0);
+      let promedio = valores / dataArray.length;
+
+      let porcentaje = Math.min(100, (promedio / 255) * 100);
+
+      const nivel = document.getElementById("nivel");
+      nivel.style.height = porcentaje + "%";
+
+      const imagenCentral = document.getElementById("imagenCentral");
+      const semaforoImg = document.getElementById("semaforoImg");
+
+      if (porcentaje < 33) {
+        nivel.style.background = "green";
+        semaforoImg.src = "imagenes/semaforo-verde.png";
+        imagenCentral.src = "imagenes/normal.png";
+      } else if (porcentaje < 66) {
+        nivel.style.background = "yellow";
+        semaforoImg.src = "imagenes/semaforo-amarillo.png";
+        imagenCentral.src = "imagenes/alerta.png";
+      } else {
+        nivel.style.background = "red";
+        semaforoImg.src = "imagenes/semaforo-rojo.png";
+        imagenCentral.src = "imagenes/peligro.png";
+      }
+    }
+
+    // Intentar iniciar automáticamente al cargar
+    window.addEventListener("load", async () => {
       try {
         await iniciarMicrofono();
-      } catch (e) {
-        // Algunos navegadores bloquean sin interacción del usuario
-        capaInicio.hidden = false;
-        botonInicio.addEventListener("click", async () => {
-          try {
-            await iniciarMicrofono();
-            capaInicio.hidden = true;
-          } catch (err) {
-            alert("Error al acceder al micrófono: " + err);
-          }
-        }, { once: true });
+      } catch (error) {
+        // Si el navegador no permite auto-inicio, mostramos botón
+        document.getElementById("contenedorBoton").style.display = "block";
       }
-    })();
+    });
+
+    // Evento del botón Iniciar
+    document.getElementById("btnIniciar").addEventListener("click", () => {
+      iniciarMicrofono();
+    });
+  </script>
+</body>
+</html>
+
   </script>
 </body>
 </html>
