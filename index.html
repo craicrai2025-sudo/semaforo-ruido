@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Semáforo de Ruido</title>
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 100vh;
+      font-family: Arial, sans-serif;
+    }
+    /* Barra de sonido */
+    #barra-container {
+      width: 80px;
+      height: 80%;
+      background: #333;
+      border-radius: 10px;
+      margin-left: 40px;
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
+    }
+    #barra {
+      width: 100%;
+      height: 0%;
+      border-radius: 10px;
+      background: green;
+      transition: height 0.1s, background 0.3s;
+    }
+    /* Imagen central */
+    #imagen-central {
+      flex: 1;
+      text-align: center;
+    }
+    #imagen-central img {
+      max-height: 70vh;
+      max-width: 90%;
+    }
+    /* Semáforo */
+    #semaforo {
+      margin-right: 40px;
+    }
+    #semaforo img {
+      height: 300px;
+    }
+
+    /* Botón de inicio (útil para Safari/iOS que exige interacción) */
+    #iniciar {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: rgba(0,0,0,.8);
+    }
+    #iniciar button {
+      font-size: 1.2rem;
+      padding: .8rem 1.2rem;
+      border-radius: .6rem;
+      border: 0;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <!-- Barra -->
+  <div id="barra-container">
+    <div id="barra"></div>
+  </div>
+
+  <!-- Imagen central -->
+  <div id="imagen-central">
+    <img id="imagenEstado" src="imagenes/verde.png" alt="Estado">
+  </div>
+
+  <!-- Semáforo -->
+  <div id="semaforo">
+    <img id="imagenSemaforo" src="imagenes/semaforo_verde.png" alt="Semáforo">
+  </div>
+
+  <!-- Capa para arrancar el audio en dispositivos que lo exigen -->
+  <div id="iniciar" hidden>
+    <button>Iniciar</button>
+  </div>
+
+  <script>
+    const barra = document.getElementById("barra");
+    const imagenSemaforo = document.getElementById("imagenSemaforo");
+    const imagenEstado = document.getElementById("imagenEstado");
+    const capaInicio = document.getElementById("iniciar");
+    const botonInicio = capaInicio.querySelector("button");
+
+    // Medición más estable: RMS del dominio temporal
+    function calcularRMS(analyser) {
+      const bufferLength = analyser.fftSize;
+      const data = new Uint8Array(bufferLength);
+      analyser.getByteTimeDomainData(data);
+      // Convierte 0..255 a -1..1 y calcula RMS
+      let sum = 0;
+      for (let i = 0; i < bufferLength; i++) {
+        const v = (data[i] - 128) / 128;
+        sum += v * v;
+      }
+      const rms = Math.sqrt(sum / bufferLength); // 0..~1
+      return Math.min(1, rms * 1.8); // ligero “gain”
+    }
+
+    async function iniciarMicrofono() {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 1024;
+      source.connect(analyser);
+
+      function actualizar() {
+        const rms = calcularRMS(analyser);         // 0..1
+        const porcentaje = Math.round(rms * 100);  // 0..100
+
+        // Actualizar barra
+        barra.style.height = porcentaje + "%";
+
+        // Colores y estados
+        if (porcentaje < 30) {
+          barra.style.background = "green";
+          imagenSemaforo.src = "imagenes/semaforo_verde.png";
+          imagenEstado.src = "imagenes/verde.png";
+        } else if (porcentaje < 70) {
+          barra.style.background = "yellow";
+          imagenSemaforo.src = "imagenes/semaforo_amarillo.png";
+          imagenEstado.src = "imagenes/amarillo.png";
+        } else {
+          barra.style.background = "red";
+          imagenSemaforo.src = "imagenes/semaforo_rojo.png";
+          imagenEstado.src = "imagenes/rojo.png";
+        }
+
+        requestAnimationFrame(actualizar);
+      }
+
+      actualizar();
+    }
+
+    // Inicio automático; si el navegador exige interacción, mostramos botón
+    (async () => {
+      try {
+        await iniciarMicrofono();
+      } catch (e) {
+        // Algunos navegadores bloquean sin interacción del usuario
+        capaInicio.hidden = false;
+        botonInicio.addEventListener("click", async () => {
+          try {
+            await iniciarMicrofono();
+            capaInicio.hidden = true;
+          } catch (err) {
+            alert("Error al acceder al micrófono: " + err);
+          }
+        }, { once: true });
+      }
+    })();
+  </script>
+</body>
+</html>
