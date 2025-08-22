@@ -1,191 +1,194 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Semáforo de Ruido</title>
   <style>
+    :root {
+      --bg-normal: linear-gradient(to bottom right, #87cefa, #d0e7ff);
+    }
+
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       text-align: center;
-      background: linear-gradient(to bottom right, #87cefa, #d0e7ff);
-      transition: background 0.3s;
+      background: var(--bg-normal);
+      transition: background 0.25s ease;
     }
 
     h1 {
-      font-size: 2.5em;
-      font-weight: bold;
-      margin-top: 20px;
+      font-size: 2.2rem;
+      margin: 20px 0 8px;
     }
 
     p {
-      font-size: 1.2em;
-      margin-bottom: 40px;
+      margin: 0 0 28px;
+      opacity: 0.9;
     }
 
+    /* Layout: barra a la izquierda, imagen al centro */
     .container {
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
       width: 90%;
-      margin: auto;
+      margin: 0 auto 40px auto;
+      gap: 32px;
     }
 
-    /* Barra de sonido */
+    /* Barra de sonido (30% más ancha y más alta) */
     .bar-container {
-      width: 52px;  /* 40px + 30% */
-      height: 390px; /* 300px + 30% */
-      background: #eee;
-      border-radius: 20px;
+      width: 52px;    /* antes 40px */
+      height: 390px;  /* antes 300px */
+      background: #eeeeee;
+      border-radius: 22px;
       overflow: hidden;
-      margin-left: 40px;
+      margin-left: 40px;   /* posición “perfecta” que tenías */
       display: flex;
-      align-items: flex-end; /* Para que crezca desde abajo */
+      align-items: flex-end; /* llena de abajo hacia arriba */
+      box-shadow: 0 6px 16px rgba(0,0,0,0.15) inset;
     }
 
     .bar {
       width: 100%;
       height: 0%;
-      background: green;
-      transition: height 0.1s, background 0.1s;
+      background: #00c853; /* se reemplaza dinámicamente */
+      transition: height 0.10s linear, background 0.10s linear;
     }
 
-    /* Imagen del centro */
-    .wolf {
+    /* Imagen central (usa tus archivo en /imagenes) */
+    .center {
       flex: 1;
-      text-align: center;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 420px;
     }
 
-    .wolf img {
-      width: 200px;
-    }
-
-    /* Semáforo fijo a la derecha */
-    .traffic-light {
-      margin-right: 40px;
-    }
-
-    .traffic-light img {
-      width: 120px;
+    #estadoImg {
+      width: 220px;
+      max-width: 60vw;
+      height: auto;
+      user-select: none;
     }
   </style>
 </head>
 <body>
   <h1>🚦 Semáforo de Ruido</h1>
-  <p>Este semáforo muestra el nivel de ruido en diferentes colores.</p>
+  <p>La barra cambia con el micrófono; la imagen central y el fondo reaccionan según el nivel.</p>
 
   <div class="container">
     <!-- Barra de sonido -->
     <div class="bar-container">
-      <div class="bar" id="bar"></div>
+      <div id="bar" class="bar"></div>
     </div>
 
-    <!-- Imagen central -->
-    <div class="wolf">
-      <img id="wolfImage" src="verde.png" alt="Imagen central">
-    </div>
-
-    <!-- Semáforo fijo -->
-    <div class="traffic-light">
-      <img src="semaforo.png" alt="Semáforo">
+    <!-- Imagen central (cambia entre verde.png, amarillo.png, rojo.png) -->
+    <div class="center">
+      <img id="estadoImg" src="imagenes/verde.png" alt="Estado de ruido">
     </div>
   </div>
 
   <script>
+    // ===== Utilidades de color (gradiente progresivo verde -> amarillo -> rojo) =====
+    function lerp(a, b, t) { return a + (b - a) * t; }
+    function mixRGB(c1, c2, t) {
+      return [
+        Math.round(lerp(c1[0], c2[0], t)),
+        Math.round(lerp(c1[1], c2[1], t)),
+        Math.round(lerp(c1[2], c2[2], t)),
+      ];
+    }
+    function rgbStr([r,g,b]) { return `rgb(${r}, ${g}, ${b})`; }
+
+    const GREEN  = [0, 255, 0];
+    const YELLOW = [255, 255, 0];
+    const RED    = [255, 0, 0];
+
+    // ===== Parpadeo de fondo en nivel peligro =====
+    const DEFAULT_BG = getComputedStyle(document.body).backgroundImage || 'var(--bg-normal)';
     let blinkInterval = null;
-
-    // Función para interpolar colores
-    function interpolateColor(color1, color2, factor) {
-      let result = color1.slice();
-      for (let i = 0; i < 3; i++) {
-        result[i] = Math.round(result[i] + factor * (color2[i] - color1[i]));
-      }
-      return result;
-    }
-
-    function rgbToCss(rgb) {
-      return "rgb(" + rgb.join(",") + ")";
-    }
-
-    // Acceder al micrófono
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-      const audioContext = new AudioContext();
-      const source = audioContext.createMediaStreamSource(stream);
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-      source.connect(analyser);
-
-      const bar = document.getElementById("bar");
-      const wolfImage = document.getElementById("wolfImage");
-
-      function animate() {
-        analyser.getByteFrequencyData(dataArray);
-        let values = 0;
-        for (let i = 0; i < dataArray.length; i++) {
-          values += dataArray[i];
-        }
-        let average = values / dataArray.length;
-
-        // Normalizamos el volumen (0 - 100)
-        let volume = Math.min(100, (average / 255) * 100);
-
-        bar.style.height = volume + "%";
-
-        // Colores: verde → amarillo → rojo
-        let green = [0, 255, 0];
-        let yellow = [255, 255, 0];
-        let red = [255, 0, 0];
-        let color;
-
-        if (volume <= 50) {
-          let factor = volume / 50; // 0 a 1
-          color = interpolateColor(green, yellow, factor);
-        } else {
-          let factor = (volume - 50) / 50; // 0 a 1
-          color = interpolateColor(yellow, red, factor);
-        }
-
-        bar.style.background = rgbToCss(color);
-
-        // Cambiar la imagen según el nivel
-        if (volume <= 40) {
-          wolfImage.src = "verde.png";
-          stopBlink();
-          document.body.style.background = "linear-gradient(to bottom right, #87cefa, #d0e7ff)";
-        } else if (volume <= 70) {
-          wolfImage.src = "amarillo.png";
-          stopBlink();
-          document.body.style.background = "linear-gradient(to bottom right, #87cefa, #d0e7ff)";
-        } else {
-          wolfImage.src = "rojo.png";
-          startBlink();
-        }
-
-        requestAnimationFrame(animate);
-      }
-
-      animate();
-    });
-
     function startBlink() {
-      if (blinkInterval) return; // si ya está titilando, no duplicar
+      if (blinkInterval) return;
+      let toggle = false;
       blinkInterval = setInterval(() => {
-        document.body.style.background =
-          document.body.style.background.includes("black")
-            ? "red"
-            : "black";
+        document.body.style.background = toggle ? 'black' : 'red';
+        toggle = !toggle;
       }, 300);
     }
-
     function stopBlink() {
       if (blinkInterval) {
         clearInterval(blinkInterval);
         blinkInterval = null;
       }
+      document.body.style.background = 'var(--bg-normal)';
     }
+
+    // ===== Audio + Animación =====
+    (async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        const audioContext = new AudioCtx();
+        const source = audioContext.createMediaStreamSource(stream);
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        source.connect(analyser);
+
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        const barEl = document.getElementById('bar');
+        const estadoImg = document.getElementById('estadoImg');
+
+        function frame() {
+          analyser.getByteFrequencyData(dataArray);
+
+          // Promedio simple para un "nivel" de 0..100
+          let sum = 0;
+          for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+          const avg = sum / dataArray.length;
+          const volume = Math.min(100, (avg / 255) * 100);
+
+          // Altura de la barra (0..100%)
+          barEl.style.height = volume + '%';
+
+          // Color progresivo:
+          // 0..50 -> verde a amarillo, 50..100 -> amarillo a rojo
+          let color;
+          if (volume <= 50) {
+            color = mixRGB(GREEN, YELLOW, volume / 50);
+          } else {
+            color = mixRGB(YELLOW, RED, (volume - 50) / 50);
+          }
+          barEl.style.background = rgbStr(color);
+
+          // Imagen + parpadeo según umbrales pedidos
+          if (volume <= 40) {
+            if (estadoImg.src.indexOf('imagenes/verde.png') === -1) {
+              estadoImg.src = 'imagenes/verde.png';
+            }
+            stopBlink();
+          } else if (volume <= 70) {
+            if (estadoImg.src.indexOf('imagenes/amarillo.png') === -1) {
+              estadoImg.src = 'imagenes/amarillo.png';
+            }
+            stopBlink();
+          } else { // 71% .. 100%
+            if (estadoImg.src.indexOf('imagenes/rojo.png') === -1) {
+              estadoImg.src = 'imagenes/rojo.png';
+            }
+            startBlink();
+          }
+
+          requestAnimationFrame(frame);
+        }
+
+        frame();
+      } catch (err) {
+        alert('No se pudo acceder al micrófono. Verifica permisos HTTPS/localhost.');
+        console.error(err);
+      }
+    })();
   </script>
 </body>
 </html>
-
