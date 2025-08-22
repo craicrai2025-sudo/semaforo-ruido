@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Semáforo</title>
+  <title>Semáforo con Micrófono</title>
   <style>
     body {
       margin: 0;
@@ -12,12 +12,12 @@
       justify-content: center;
       align-items: center;
 
-      /* Fondo degradado azul pastel mate */
+      /* Fondo azul pastel mate */
       background: radial-gradient(
         circle,
-        #e9f6ff 0%,   /* azul casi blanco en el centro */
-        #cfe9ff 50%,  /* azul mate pastel intermedio */
-        #b5dbff 100%  /* azul pastel suave en bordes */
+        #e9f6ff 0%,   /* casi blanco */
+        #cfe9ff 50%,  /* azul mate */
+        #b5dbff 100%  /* pastel suave */
       );
     }
 
@@ -38,9 +38,44 @@
       width: 100px;
       height: auto;
     }
+
+    /* Barra lateral para micrófono */
+    .barra-microfono {
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 60px;
+      height: 300px;
+      background: #333;
+      border-radius: 30px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.4);
+    }
+
+    .microfono {
+      width: 30px;
+      height: 30px;
+      background: white;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 18px;
+      font-weight: bold;
+      color: black;
+    }
   </style>
 </head>
 <body>
+  <!-- Barra lateral con micrófono -->
+  <div class="barra-microfono">
+    <div class="microfono">🎤</div>
+  </div>
+
+  <!-- Contenedor principal -->
   <div class="contenedor">
     <div class="columna">
       <img src="normal.png" alt="Normal">
