@@ -7,15 +7,20 @@
 
   <style>
     body {
-      margin: 0;
-      /* Fondo degradado: azul más claro en el centro, un poco más oscuro en los bordes */
-      background: radial-gradient(circle, #E0F7FA 0%, #90CAF9 100%);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    /* Fondo con degradado azul pastel */
+    background: radial-gradient(
+        circle, 
+        #b3e5fc 0%,   /* azul pastel más claro en el centro */
+        #81d4fa 50%,  /* azul intermedio */
+        #4fc3f7 100%  /* azul pastel más oscuro en los bordes */
+    );
+}
 
     .container {
       display: flex;
