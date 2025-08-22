@@ -10,6 +10,7 @@
       font-family: Arial, sans-serif;
       text-align: center;
       background: linear-gradient(to bottom right, #87cefa, #d0e7ff);
+      transition: background 0.3s;
     }
 
     h1 {
@@ -33,22 +34,24 @@
 
     /* Barra de sonido */
     .bar-container {
-      width: 40px;
-      height: 300px;
+      width: 52px;  /* 40px + 30% */
+      height: 390px; /* 300px + 30% */
       background: #eee;
       border-radius: 20px;
       overflow: hidden;
-      margin-left: 40px; /* margen para que no quede pegada */
+      margin-left: 40px;
+      display: flex;
+      align-items: flex-end; /* Para que crezca desde abajo */
     }
 
     .bar {
       width: 100%;
       height: 0%;
       background: green;
-      transition: height 0.1s, background 0.2s;
+      transition: height 0.1s, background 0.1s;
     }
 
-    /* Imagen del lobo centrada */
+    /* Imagen del centro */
     .wolf {
       flex: 1;
       text-align: center;
@@ -58,7 +61,7 @@
       width: 200px;
     }
 
-    /* Semáforo a la derecha */
+    /* Semáforo fijo a la derecha */
     .traffic-light {
       margin-right: 40px;
     }
@@ -78,18 +81,33 @@
       <div class="bar" id="bar"></div>
     </div>
 
-    <!-- Imagen del lobo (cambiará entre verde, amarillo y rojo) -->
+    <!-- Imagen central -->
     <div class="wolf">
-      <img id="wolfImage" src="verde.png" alt="Lobo">
+      <img id="wolfImage" src="verde.png" alt="Imagen central">
     </div>
 
-    <!-- Semáforo fijo a la derecha -->
+    <!-- Semáforo fijo -->
     <div class="traffic-light">
       <img src="semaforo.png" alt="Semáforo">
     </div>
   </div>
 
   <script>
+    let blinkInterval = null;
+
+    // Función para interpolar colores
+    function interpolateColor(color1, color2, factor) {
+      let result = color1.slice();
+      for (let i = 0; i < 3; i++) {
+        result[i] = Math.round(result[i] + factor * (color2[i] - color1[i]));
+      }
+      return result;
+    }
+
+    function rgbToCss(rgb) {
+      return "rgb(" + rgb.join(",") + ")";
+    }
+
     // Acceder al micrófono
     navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
       const audioContext = new AudioContext();
@@ -115,16 +133,34 @@
 
         bar.style.height = volume + "%";
 
-        // Cambiar color y la imagen del lobo
-        if (volume < 33) {
-          bar.style.background = "green";
-          wolfImage.src = "verde.png";
-        } else if (volume < 66) {
-          bar.style.background = "yellow";
-          wolfImage.src = "amarillo.png";
+        // Colores: verde → amarillo → rojo
+        let green = [0, 255, 0];
+        let yellow = [255, 255, 0];
+        let red = [255, 0, 0];
+        let color;
+
+        if (volume <= 50) {
+          let factor = volume / 50; // 0 a 1
+          color = interpolateColor(green, yellow, factor);
         } else {
-          bar.style.background = "red";
+          let factor = (volume - 50) / 50; // 0 a 1
+          color = interpolateColor(yellow, red, factor);
+        }
+
+        bar.style.background = rgbToCss(color);
+
+        // Cambiar la imagen según el nivel
+        if (volume <= 40) {
+          wolfImage.src = "verde.png";
+          stopBlink();
+          document.body.style.background = "linear-gradient(to bottom right, #87cefa, #d0e7ff)";
+        } else if (volume <= 70) {
+          wolfImage.src = "amarillo.png";
+          stopBlink();
+          document.body.style.background = "linear-gradient(to bottom right, #87cefa, #d0e7ff)";
+        } else {
           wolfImage.src = "rojo.png";
+          startBlink();
         }
 
         requestAnimationFrame(animate);
@@ -132,6 +168,23 @@
 
       animate();
     });
+
+    function startBlink() {
+      if (blinkInterval) return; // si ya está titilando, no duplicar
+      blinkInterval = setInterval(() => {
+        document.body.style.background =
+          document.body.style.background.includes("black")
+            ? "red"
+            : "black";
+      }, 300);
+    }
+
+    function stopBlink() {
+      if (blinkInterval) {
+        clearInterval(blinkInterval);
+        blinkInterval = null;
+      }
+    }
   </script>
 </body>
 </html>
