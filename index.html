@@ -3,144 +3,128 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Medidor de Ruido</title>
+  <title>Semáforo de Ruido</title>
   <style>
     body {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      padding: 0 60px; /* separación de los bordes izquierdo y derecho */
-      background: radial-gradient(circle, #e2f1fb, #b3daf5);
       font-family: Arial, sans-serif;
-    }
-
-    /* Columna izquierda (barra) */
-    .bar-container {
-      width: 60px;
-      height: 300px;
-      background: #333;
-      border-radius: 30px;
-      overflow: hidden;
-      margin: auto 0;
-      box-shadow: 0px 4px 8px rgba(0,0,0,0.2);
-    }
-
-    .bar {
-      width: 100%;
-      height: 0%;
-      background: green;
-      transition: height 0.3s ease-out, background 0.3s;
-    }
-
-    /* Columna central (lobo) */
-    .center {
-      flex-grow: 1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .wolf {
-      max-height: 250px;
-      transition: transform 0.3s;
-    }
-
-    /* Columna derecha (semaforo) */
-    .right {
+      text-align: center;
+      background: radial-gradient(circle, #dbeafe, #bfdbfe, #93c5fd);
+      margin: 0;
+      padding: 0;
+      height: 100vh;
       display: flex;
       flex-direction: column;
-      align-items: center;
+      justify-content: flex-start;
     }
 
-    .status-image {
-      height: 150px;
-      transition: transform 0.3s;
-    }
-
-    .status-text {
+    h1 {
       margin-top: 10px;
-      font-size: 20px;
-      font-weight: bold;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      align-items: center;
+      justify-items: center;
+      flex-grow: 1;
+      width: 100%;
+      padding: 20px;
+    }
+
+    /* Barra de sonido */
+    #sound-bar {
+      width: 40px;
+      height: 250px;
+      background: #e5e7eb;
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      align-items: flex-end;
+    }
+
+    #sound-level {
+      width: 100%;
+      height: 0;
+      background: linear-gradient(to top, #34d399, #facc15, #f87171);
+      transition: height 0.1s;
+    }
+
+    /* Imagen del lobo */
+    .wolf img {
+      max-width: 200px;
+    }
+
+    /* Semáforo */
+    .traffic-light img {
+      max-width: 100px;
+      display: block;
+      margin: 10px auto;
     }
   </style>
 </head>
 <body>
-  <!-- Barra de sonido a la izquierda -->
-  <div class="bar-container">
-    <div class="bar" id="bar"></div>
-  </div>
+  <h1>🚦 Semáforo de Ruido 🐺</h1>
+  <p>Este semáforo muestra el nivel de ruido en diferentes colores.</p>
 
-  <!-- Imagen central del lobo -->
-  <div class="center">
-    <img src="imagenes/lobo.png" alt="Lobo" class="wolf">
-  </div>
+  <div class="container">
+    <!-- Barra de sonido -->
+    <div class="sound-meter">
+      <div id="sound-bar">
+        <div id="sound-level"></div>
+      </div>
+    </div>
 
-  <!-- Semáforo y texto a la derecha -->
-  <div class="right">
-    <img id="statusImage" class="status-image" src="imagenes/verde.png" alt="Estado">
-    <div id="statusText" class="status-text">Normal</div>
+    <!-- Lobo en el centro -->
+    <div class="wolf">
+      <img id="wolf" src="imagenes/normal.png" alt="Lobo">
+    </div>
+
+    <!-- Semáforo a la derecha -->
+    <div class="traffic-light">
+      <img id="semaforo" src="imagenes/semaforo-verde.png" alt="Semáforo">
+    </div>
   </div>
 
   <script>
-    async function initMicrophone() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    // Acceso al micrófono y control de barra
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => {
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const source = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
-        const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
+        const source = audioContext.createMediaStreamSource(stream);
         source.connect(analyser);
 
-        let smoothedLevel = 0;
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-        function update() {
-          analyser.getByteTimeDomainData(dataArray);
+        function updateSoundBar() {
+          analyser.getByteFrequencyData(dataArray);
+          let volume = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
+          let height = Math.min(100, (volume / 255) * 100);
+          document.getElementById("sound-level").style.height = height + "%";
 
-          // calcular RMS
-          let sum = 0;
-          for (let i = 0; i < dataArray.length; i++) {
-            let value = (dataArray[i] - 128) / 128;
-            sum += value * value;
-          }
-          let rms = Math.sqrt(sum / dataArray.length);
-          let targetLevel = Math.min(100, rms * 500);
+          // Cambiar imágenes según el volumen
+          const wolf = document.getElementById("wolf");
+          const semaforo = document.getElementById("semaforo");
 
-          smoothedLevel = smoothedLevel * 0.8 + targetLevel * 0.2;
-
-          const bar = document.getElementById("bar");
-          const statusImage = document.getElementById("statusImage");
-          const statusText = document.getElementById("statusText");
-
-          bar.style.height = smoothedLevel + "%";
-
-          if (smoothedLevel < 40) {
-            bar.style.background = "green";
-            statusImage.src = "imagenes/verde.png";
-            statusText.textContent = "Normal";
-          } else if (smoothedLevel < 70) {
-            bar.style.background = "yellow";
-            statusImage.src = "imagenes/amarillo.png";
-            statusText.textContent = "Alerta";
+          if (height < 33) {
+            wolf.src = "imagenes/normal.png";
+            semaforo.src = "imagenes/semaforo-verde.png";
+          } else if (height < 66) {
+            wolf.src = "imagenes/alerta.png";
+            semaforo.src = "imagenes/semaforo-amarillo.png";
           } else {
-            bar.style.background = "red";
-            statusImage.src = "imagenes/rojo.png";
-            statusText.textContent = "Peligro";
+            wolf.src = "imagenes/peligro.png";
+            semaforo.src = "imagenes/semaforo-rojo.png";
           }
 
-          requestAnimationFrame(update);
+          requestAnimationFrame(updateSoundBar);
         }
 
-        update();
-      } catch (err) {
-        alert("No se pudo acceder al micrófono: " + err);
-        console.error(err);
-      }
-    }
-
-    initMicrophone();
+        updateSoundBar();
+      })
+      .catch(err => {
+        console.error("Error al acceder al micrófono:", err);
+      });
   </script>
 </body>
 </html>
