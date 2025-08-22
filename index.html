@@ -7,7 +7,7 @@
 
   <style>
     body {
-      margin: 2;
+      margin: 0;
       background: black;
       display: flex;
       flex-direction: column;
@@ -18,8 +18,10 @@
 
     .container {
       display: flex;
-      justify-content: space-between;
+      justify-content: center; /* centra los elementos */
       align-items: center;
+      gap: 50px; /* espacio entre la barra, imagen central y semáforo */
+      max-width: 1000px; /* ancho máximo para no pegarse a los bordes */
       width: 90%;
     }
 
@@ -153,10 +155,6 @@
     document.getElementById("btnIniciar").addEventListener("click", () => {
       iniciarMicrofono();
     });
-  </script>
-</body>
-</html>
-
   </script>
 </body>
 </html>
