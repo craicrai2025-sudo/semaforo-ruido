@@ -2,105 +2,55 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Panel de Imágenes con Barra de Sonido</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Semáforo de Ruido</title>
   <style>
     body {
-      margin: 0;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: radial-gradient(circle at center, #d9ecff, #a9d4f7);
       font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f4f4f9;
     }
-
+    h1 {
+      color: #333;
+    }
     .contenedor {
-      display: flex;
-      flex-direction: row;
-      gap: 80px;
+      margin-top: 20px;
     }
-
-    .imagenes {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px 40px;
-      align-items: center;
+    .estado {
+      margin: 20px;
     }
-
-    .imagenes img {
-      width: 80px;
-      height: 80px;
-      object-fit: contain;
-      display: block;
-      margin-bottom: 5px;
-    }
-
-    .barra-sonido {
-      width: 20px;
-      height: 150px;
-      background: #333;
-      border-radius: 12px;
-      margin-left: 40px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      overflow: hidden;
-    }
-
-    .nivel {
-      width: 100%;
-      background: linear-gradient(to top, #4CAF50, #8BC34A);
-      height: 0;
-      transition: height 0.1s linear;
+    .estado img {
+      width: 120px;
+      height: auto;
     }
   </style>
 </head>
 <body>
+  <h1>🚦 Semáforo de Ruido 🚦</h1>
+  <p>Este semáforo muestra el nivel de ruido con diferentes colores.</p>
+
   <div class="contenedor">
-    <!-- Barra de sonido -->
-    <div class="barra-sonido">
-      <div class="nivel" id="nivel"></div>
+    <div class="estado">
+      <h2>Nivel Normal</h2>
+      <img src="imagenes/normal.png" alt="Normal">
+      <br>
+      <img src="imagenes/semaforo_verde.png" alt="Semáforo Verde">
     </div>
 
-    <!-- Imágenes -->
-    <div class="imagenes">
-      <div><img src="imagenes/normal.png" alt="Normal"><br>Normal</div>
-      <div><img src="imagenes/semaforo-verde.png" alt="Semáforo Verde"><br>Semáforo Verde</div>
-      <div><img src="imagenes/alerta.png" alt="Alerta"><br>Alerta</div>
-      <div><img src="imagenes/semaforo-amarillo.png" alt="Semáforo Amarillo"><br>Semáforo Amarillo</div>
-      <div><img src="imagenes/peligro.png" alt="Peligro"><br>Peligro</div>
-      <div><img src="imagenes/semaforo-rojo.png" alt="Semáforo Rojo"><br>Semáforo Rojo</div>
+    <div class="estado">
+      <h2>Nivel Alerta</h2>
+      <img src="imagenes/alerta.png" alt="Alerta">
+      <br>
+      <img src="imagenes/semaforo_amarillo.png" alt="Semáforo Amarillo">
+    </div>
+
+    <div class="estado">
+      <h2>Nivel Peligro</h2>
+      <img src="imagenes/peligro.png" alt="Peligro">
+      <br>
+      <img src="imagenes/semaforo_rojo.png" alt="Semáforo Rojo">
     </div>
   </div>
-
-  <script>
-    // Captura el micrófono y anima la barra
-    navigator.mediaDevices.getUserMedia({ audio: true })
-      .then(stream => {
-        const audioContext = new AudioContext();
-        const source = audioContext.createMediaStreamSource(stream);
-        const analyser = audioContext.createAnalyser();
-        analyser.fftSize = 256;
-        const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-        source.connect(analyser);
-
-        const nivel = document.getElementById('nivel');
-
-        function animar() {
-          analyser.getByteFrequencyData(dataArray);
-          let volumen = dataArray.reduce((a, b) => a + b) / dataArray.length;
-          let porcentaje = Math.min(volumen / 2, 100);
-          nivel.style.height = porcentaje + "%";
-          requestAnimationFrame(animar);
-        }
-
-        animar();
-      })
-      .catch(err => {
-        console.error("Error accediendo al micrófono: ", err);
-      });
-  </script>
 </body>
 </html>
+
