@@ -7,25 +7,23 @@
   <style>
     body {
       display: flex;
-      justify-content: center;
+      justify-content: space-between;
       align-items: center;
       height: 100vh;
       margin: 0;
-      background: radial-gradient(circle, #d7ecfa, #a7d3f2);
+      padding: 0 60px; /* separación de los bordes izquierdo y derecho */
+      background: radial-gradient(circle, #e2f1fb, #b3daf5);
       font-family: Arial, sans-serif;
     }
 
-    .container {
-      text-align: center;
-    }
-
+    /* Columna izquierda (barra) */
     .bar-container {
       width: 60px;
       height: 300px;
       background: #333;
       border-radius: 30px;
       overflow: hidden;
-      margin: 20px auto;
+      margin: auto 0;
       box-shadow: 0px 4px 8px rgba(0,0,0,0.2);
     }
 
@@ -36,8 +34,27 @@
       transition: height 0.3s ease-out, background 0.3s;
     }
 
+    /* Columna central (lobo) */
+    .center {
+      flex-grow: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .wolf {
+      max-height: 250px;
+      transition: transform 0.3s;
+    }
+
+    /* Columna derecha (semaforo) */
+    .right {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
     .status-image {
-      margin-top: 20px;
       height: 150px;
       transition: transform 0.3s;
     }
@@ -50,10 +67,18 @@
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="bar-container">
-      <div class="bar" id="bar"></div>
-    </div>
+  <!-- Barra de sonido a la izquierda -->
+  <div class="bar-container">
+    <div class="bar" id="bar"></div>
+  </div>
+
+  <!-- Imagen central del lobo -->
+  <div class="center">
+    <img src="imagenes/lobo.png" alt="Lobo" class="wolf">
+  </div>
+
+  <!-- Semáforo y texto a la derecha -->
+  <div class="right">
     <img id="statusImage" class="status-image" src="imagenes/verde.png" alt="Estado">
     <div id="statusText" class="status-text">Normal</div>
   </div>
@@ -69,12 +94,12 @@
 
         source.connect(analyser);
 
-        let smoothedLevel = 0; // nivel suavizado
+        let smoothedLevel = 0;
 
         function update() {
           analyser.getByteTimeDomainData(dataArray);
 
-          // calcular nivel RMS (volumen promedio)
+          // calcular RMS
           let sum = 0;
           for (let i = 0; i < dataArray.length; i++) {
             let value = (dataArray[i] - 128) / 128;
@@ -83,7 +108,6 @@
           let rms = Math.sqrt(sum / dataArray.length);
           let targetLevel = Math.min(100, rms * 500);
 
-          // suavizado (interpolación)
           smoothedLevel = smoothedLevel * 0.8 + targetLevel * 0.2;
 
           const bar = document.getElementById("bar");
