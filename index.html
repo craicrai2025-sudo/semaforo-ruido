@@ -2,8 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Semáforo con Micrófono</title>
+  <title>Panel de Imágenes con Barra de Sonido</title>
   <style>
     body {
       margin: 0;
@@ -11,82 +10,97 @@
       display: flex;
       justify-content: center;
       align-items: center;
-
-      /* Fondo azul pastel mate */
-      background: radial-gradient(
-        circle,
-        #e9f6ff 0%,   /* casi blanco */
-        #cfe9ff 50%,  /* azul mate */
-        #b5dbff 100%  /* pastel suave */
-      );
+      background: radial-gradient(circle at center, #d9ecff, #a9d4f7);
+      font-family: Arial, sans-serif;
     }
 
     .contenedor {
       display: flex;
+      flex-direction: row;
+      gap: 80px;
+    }
+
+    .imagenes {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px 40px;
       align-items: center;
-      gap: 40px;
     }
 
-    .columna {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      align-items: center;
+    .imagenes img {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+      display: block;
+      margin-bottom: 5px;
     }
 
-    .columna img {
-      width: 100px;
-      height: auto;
-    }
-
-    /* Barra lateral para micrófono */
-    .barra-microfono {
-      position: absolute;
-      left: 20px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 60px;
-      height: 300px;
+    .barra-sonido {
+      width: 20px;
+      height: 150px;
       background: #333;
-      border-radius: 30px;
+      border-radius: 12px;
+      margin-left: 40px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
       display: flex;
+      align-items: flex-end;
       justify-content: center;
-      align-items: center;
-      box-shadow: 0px 4px 10px rgba(0,0,0,0.4);
+      overflow: hidden;
     }
 
-    .microfono {
-      width: 30px;
-      height: 30px;
-      background: white;
-      border-radius: 50%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 18px;
-      font-weight: bold;
-      color: black;
+    .nivel {
+      width: 100%;
+      background: linear-gradient(to top, #4CAF50, #8BC34A);
+      height: 0;
+      transition: height 0.1s linear;
     }
   </style>
 </head>
 <body>
-  <!-- Barra lateral con micrófono -->
-  <div class="barra-microfono">
-    <div class="microfono">🎤</div>
+  <div class="contenedor">
+    <!-- Barra de sonido -->
+    <div class="barra-sonido">
+      <div class="nivel" id="nivel"></div>
+    </div>
+
+    <!-- Imágenes -->
+    <div class="imagenes">
+      <div><img src="imagenes/normal.png" alt="Normal"><br>Normal</div>
+      <div><img src="imagenes/semaforo-verde.png" alt="Semáforo Verde"><br>Semáforo Verde</div>
+      <div><img src="imagenes/alerta.png" alt="Alerta"><br>Alerta</div>
+      <div><img src="imagenes/semaforo-amarillo.png" alt="Semáforo Amarillo"><br>Semáforo Amarillo</div>
+      <div><img src="imagenes/peligro.png" alt="Peligro"><br>Peligro</div>
+      <div><img src="imagenes/semaforo-rojo.png" alt="Semáforo Rojo"><br>Semáforo Rojo</div>
+    </div>
   </div>
 
-  <!-- Contenedor principal -->
-  <div class="contenedor">
-    <div class="columna">
-      <img src="normal.png" alt="Normal">
-      <img src="alerta.png" alt="Alerta">
-      <img src="peligro.png" alt="Peligro">
-    </div>
-    <div class="columna">
-      <img src="semaforo-verde.png" alt="Semáforo Verde">
-      <img src="semaforo-amarillo.png" alt="Semáforo Amarillo">
-      <img src="semaforo-rojo.png" alt="Semáforo Rojo">
-    </div>
-  </div>
+  <script>
+    // Captura el micrófono y anima la barra
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => {
+        const audioContext = new AudioContext();
+        const source = audioContext.createMediaStreamSource(stream);
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+        source.connect(analyser);
+
+        const nivel = document.getElementById('nivel');
+
+        function animar() {
+          analyser.getByteFrequencyData(dataArray);
+          let volumen = dataArray.reduce((a, b) => a + b) / dataArray.length;
+          let porcentaje = Math.min(volumen / 2, 100);
+          nivel.style.height = porcentaje + "%";
+          requestAnimationFrame(animar);
+        }
+
+        animar();
+      })
+      .catch(err => {
+        console.error("Error accediendo al micrófono: ", err);
+      });
+  </script>
 </body>
 </html>
