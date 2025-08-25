@@ -145,7 +145,7 @@
           let sum = 0;
           for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
           const avg = sum / dataArray.length;
-          const volume = Math.min(45, (avg / 100) * 100);
+          const volume = Math.min(10, (avg / 100) * 100);
 
           // Altura de la barra
           barEl.style.height = volume + '%';
