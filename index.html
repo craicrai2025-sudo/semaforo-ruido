@@ -5,15 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Semáforo de Ruido</title>
   <style>
-    :root {
-      --bg-normal: linear-gradient(to bottom right, #87cefa, #d0e7ff);
-    }
-
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       text-align: center;
-      background: var(--bg-normal);
+      background: linear-gradient(to bottom right, #87cefa, #d0e7ff);
       transition: background 0.25s ease;
     }
 
@@ -37,16 +33,16 @@
       gap: 32px;
     }
 
-    /* Barra de sonido (30% más ancha y más alta) */
+    /* Barra de sonido */
     .bar-container {
-      width: 52px;    /* antes 40px */
-      height: 390px;  /* antes 300px */
+      width: 52px;
+      height: 390px;
       background: #eeeeee;
       border-radius: 22px;
       overflow: hidden;
-      margin-left: 40px;   /* posición “perfecta” que tenías */
+      margin-left: 40px;
       display: flex;
-      align-items: flex-end; /* llena de abajo hacia arriba */
+      align-items: flex-end;
       box-shadow: 0 6px 16px rgba(0,0,0,0.15) inset;
     }
 
@@ -57,7 +53,7 @@
       transition: height 0.10s linear, background 0.10s linear;
     }
 
-    /* Imagen central (usa tus archivo en /imagenes) */
+    /* Imagen central */
     .center {
       flex: 1;
       display: flex;
@@ -76,7 +72,7 @@
 </head>
 <body>
   <h1>🚦 Semáforo de Ruido</h1>
-  <p>La barra cambia con el micrófono; la imagen central y el fondo reaccionan según el nivel.</p>
+  <p>La barra y el fondo cambian según el nivel de ruido.</p>
 
   <div class="container">
     <!-- Barra de sonido -->
@@ -84,14 +80,14 @@
       <div id="bar" class="bar"></div>
     </div>
 
-    <!-- Imagen central (cambia entre verde.png, amarillo.png, rojo.png) -->
+    <!-- Imagen central -->
     <div class="center">
       <img id="estadoImg" src="imagenes/verde.png" alt="Estado de ruido">
     </div>
   </div>
 
   <script>
-    // ===== Utilidades de color (gradiente progresivo verde -> amarillo -> rojo) =====
+    // ===== Utilidades de color =====
     function lerp(a, b, t) { return a + (b - a) * t; }
     function mixRGB(c1, c2, t) {
       return [
@@ -105,15 +101,17 @@
     const GREEN  = [0, 255, 0];
     const YELLOW = [255, 255, 0];
     const RED    = [255, 0, 0];
+    const BASE_BLUE = "#d0e7ff"; // azul claro de fondo
 
     // ===== Parpadeo de fondo en nivel peligro =====
-    const DEFAULT_BG = getComputedStyle(document.body).backgroundImage || 'var(--bg-normal)';
     let blinkInterval = null;
     function startBlink() {
       if (blinkInterval) return;
       let toggle = false;
       blinkInterval = setInterval(() => {
-        document.body.style.background = toggle ? 'black' : 'red';
+        document.body.style.background = toggle 
+          ? 'black' 
+          : 'linear-gradient(to bottom right, red, darkred)';
         toggle = !toggle;
       }, 300);
     }
@@ -122,7 +120,6 @@
         clearInterval(blinkInterval);
         blinkInterval = null;
       }
-      document.body.style.background = 'var(--bg-normal)';
     }
 
     // ===== Audio + Animación =====
@@ -149,20 +146,25 @@
           const avg = sum / dataArray.length;
           const volume = Math.min(100, (avg / 255) * 100);
 
-          // Altura de la barra (0..100%)
+          // Altura de la barra
           barEl.style.height = volume + '%';
 
-          // Color progresivo:
-          // 0..50 -> verde a amarillo, 50..100 -> amarillo a rojo
+          // Color progresivo
           let color;
           if (volume <= 50) {
             color = mixRGB(GREEN, YELLOW, volume / 50);
           } else {
             color = mixRGB(YELLOW, RED, (volume - 50) / 50);
           }
-          barEl.style.background = rgbStr(color);
+          const colorStr = rgbStr(color);
+          barEl.style.background = colorStr;
 
-          // Imagen + parpadeo según umbrales pedidos
+          // Fondo degradado dinámico (con base azul)
+          if (!blinkInterval) {
+            document.body.style.background = `linear-gradient(to bottom right, ${colorStr}, ${BASE_BLUE})`;
+          }
+
+          // Imagen + parpadeo según umbrales
           if (volume <= 40) {
             if (estadoImg.src.indexOf('imagenes/verde.png') === -1) {
               estadoImg.src = 'imagenes/verde.png';
