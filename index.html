@@ -131,7 +131,7 @@
         const audioContext = new AudioCtx();
         const source = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
-        analyser.fftSize = 255;
+        analyser.fftSize = 256; // potencia de 2 válida
         source.connect(analyser);
 
         const dataArray = new Uint8Array(analyser.frequencyBinCount);
@@ -145,7 +145,10 @@
           let sum = 0;
           for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
           const avg = sum / dataArray.length;
-          const volume = Math.min(100, (avg / 100) * 100);
+
+          // Normalizar a porcentaje
+          const sensitivity = 1.5; // ajusta la sensibilidad
+          const volume = Math.min(100, (avg / 255) * 100 * sensitivity);
 
           // Altura de la barra
           barEl.style.height = volume + '%';
@@ -167,19 +170,13 @@
 
           // Imagen + parpadeo según umbrales
           if (volume <= 40) {
-            if (estadoImg.src.indexOf('imagenes/verde.png') === -1) {
-              estadoImg.src = 'imagenes/verde.png';
-            }
+            if (!estadoImg.src.includes('verde.png')) estadoImg.src = 'imagenes/verde.png';
             stopBlink();
           } else if (volume <= 70) {
-            if (estadoImg.src.indexOf('imagenes/amarillo.png') === -1) {
-              estadoImg.src = 'imagenes/amarillo.png';
-            }
+            if (!estadoImg.src.includes('amarillo.png')) estadoImg.src = 'imagenes/amarillo.png';
             stopBlink();
           } else { // 71% .. 100%
-            if (estadoImg.src.indexOf('imagenes/rojo.png') === -1) {
-              estadoImg.src = 'imagenes/rojo.png';
-            }
+            if (!estadoImg.src.includes('rojo.png')) estadoImg.src = 'imagenes/rojo.png';
             startBlink();
           }
 
@@ -188,7 +185,9 @@
 
         frame();
       } catch (err) {
-        alert('No se pudo acceder al micrófono. Verifica permisos HTTPS/localhost.');
+        // Mostrar el error exacto
+        alert('Error accediendo al micrófono: ' + err.name + ' - ' + err.message +
+              '\n\n🔧 Revisa:\n1. Que uses HTTPS\n2. Que el micrófono esté permitido (candado en la URL)\n3. Que no esté ocupado por otro programa.');
         console.error(err);
       }
     })();
