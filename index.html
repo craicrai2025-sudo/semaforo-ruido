@@ -5,42 +5,80 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Semáforo de Ruido</title>
   <style>
+    :root{
+      --base-blue: #d0e7ff;
+    }
+
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       text-align: center;
-      background: linear-gradient(to bottom right, #87cefa, #d0e7ff);
+      background: linear-gradient(to bottom right, #87cefa, var(--base-blue));
       transition: background 0.25s ease;
     }
 
-    h1 {
-      font-size: 2.2rem;
-      margin: 20px 0 8px;
+    /* ====== HERO (títulos) ====== */
+    .hero-wrap{
+      display:flex; justify-content:center; margin: 12px 0 6px;
+      padding: 8px 16px;
     }
+    .hero{ text-align:center; }
 
-    p {
-      margin: 0 0 28px;
-      opacity: 0.9;
+    /* Estilo A: texto con degradado verde→turquesa */
+    .hero.style-a h1{
+      font-size: clamp(2.8rem, 5vw, 4rem);
+      font-weight: 800; line-height: 1.05; margin: 12px 0 4px;
+      background: linear-gradient(90deg,#64dd17,#00bcd4);
+      -webkit-background-clip: text; color: transparent;
+      text-shadow: 0 1px 1px rgba(0,0,0,.12);
     }
+    .hero.style-a h2{ font-size: clamp(1.2rem,2.5vw,1.6rem); font-weight:700; opacity:.9; margin:0 0 6px; }
+    .hero.style-a p{ margin: 6px 0 0; opacity:.85; }
 
-    /* Layout: barra a la izquierda, imagen al centro */
+    /* Estilo B: tarjeta “glass” */
+    .hero.style-b{
+      display:inline-block; padding: 14px 22px; border-radius: 18px;
+      background: rgba(255,255,255,.45); backdrop-filter: blur(8px);
+      box-shadow: 0 10px 30px rgba(0,0,0,.12);
+    }
+    .hero.style-b h1{ font-size: clamp(2.6rem,4.6vw,3.6rem); margin:0; font-weight:800; }
+    .hero.style-b h2{ font-size: clamp(1.1rem,2.1vw,1.5rem); margin:4px 0 2px; font-weight:700; color:#1a1a1a; }
+    .hero.style-b p{ margin:6px 0 0; opacity:.85; }
+
+    /* Estilo C: mayúsculas con contorno y sombra */
+    .hero.style-c h1{
+      font-size: clamp(2.8rem,5.2vw,4.2rem);
+      font-weight: 900; text-transform: uppercase; letter-spacing:.04em;
+      color:#111; -webkit-text-stroke:1px rgba(255,255,255,.6);
+      text-shadow: 0 8px 24px rgba(0,0,0,.25);
+      margin: 12px 0 6px;
+    }
+    .hero.style-c h2{ font-size: clamp(1.2rem,2.4vw,1.6rem); font-weight:700; opacity:.95; margin:0 0 6px; }
+    .hero.style-c p{ margin:6px 0 0; opacity:.85; }
+
+    /* ====== LAYOUT principal ====== */
     .container {
+      position: relative;
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: center;  /* centramos el lobo */
       width: 90%;
       margin: 0 auto 40px auto;
       gap: 32px;
+      min-height: 620px;
     }
 
-    /* Barra de sonido */
+    /* Barra de sonido fija a la izquierda */
     .bar-container {
+      position: absolute;
+      left: 150px;
+      top: 50%;
+      transform: translateY(-50%);
       width: 70px;
       height: 600px;
       background: #eeeeee;
       border-radius: 22px;
       overflow: hidden;
-      margin-left: 150px;
       display: flex;
       align-items: flex-end;
       box-shadow: 0 6px 16px rgba(0,0,0,0.15) inset;
@@ -53,17 +91,16 @@
       transition: height 0.10s linear, background 0.10s linear;
     }
 
-    /* Imagen central */
-    .center {
-      flex: 1;
+    /* Imagen central (lobo) */
+    .center{
+      flex: 0 1 100%;
+      width: 100%;
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 600px;
     }
-
     #estadoImg {
-      width: 600px;
+      width: 600px;       /* NO cambiamos el tamaño de la imagen */
       max-width: 300vw;
       height: auto;
       user-select: none;
@@ -71,9 +108,14 @@
   </style>
 </head>
 <body>
-  <h1>Bienvenidas y bienvenidos al CRAI UR</h1>
-  <h2>Calmómetro</h2>
-  <p>Bájale al ruido, súbele a la concentración</p>
+  <!-- ====== CAMBIA style-a por style-b o style-c para ver otro look ====== -->
+  <div class="hero-wrap">
+    <div class="hero style-a" id="hero">
+      <h1>Bienvenidas y bienvenidos al CRAI UR</h1>
+      <h2>Calmómetro</h2>
+      <p>Bájale al ruido, súbele a la concentración</p>
+    </div>
+  </div>
 
   <div class="container">
     <!-- Barra de sonido -->
@@ -102,7 +144,8 @@
     const GREEN  = [0, 255, 0];
     const YELLOW = [255, 255, 0];
     const RED    = [255, 0, 0];
-    const BASE_BLUE = "#d0e7ff"; // azul claro de fondo
+    const BASE_BLUE = getComputedStyle(document.documentElement)
+                      .getPropertyValue('--base-blue').trim() || "#d0e7ff";
 
     // ===== Parpadeo de fondo en nivel peligro =====
     let blinkInterval = null;
@@ -163,9 +206,10 @@
           const colorStr = rgbStr(color);
           barEl.style.background = colorStr;
 
-          // Fondo degradado dinámico (con base azul)
+          // Fondo degradado dinámico (si no está parpadeando)
           if (!blinkInterval) {
-            document.body.style.background = `linear-gradient(to bottom right, ${colorStr}, ${BASE_BLUE})`;
+            document.body.style.background =
+              `linear-gradient(to bottom right, ${colorStr}, ${BASE_BLUE})`;
           }
 
           // Imagen + parpadeo según umbrales
@@ -175,7 +219,7 @@
           } else if (volume <= 70) {
             if (!estadoImg.src.includes('amarillo.png')) estadoImg.src = 'imagenes/amarillo.png';
             stopBlink();
-          } else { // 71% .. 100%
+          } else {
             if (!estadoImg.src.includes('rojo.png')) estadoImg.src = 'imagenes/rojo.png';
             startBlink();
           }
@@ -185,7 +229,6 @@
 
         frame();
       } catch (err) {
-        // Mostrar el error exacto
         alert('Error accediendo al micrófono: ' + err.name + ' - ' + err.message +
               '\n\n🔧 Revisa:\n1. Que uses HTTPS\n2. Que el micrófono esté permitido (candado en la URL)\n3. Que no esté ocupado por otro programa.');
         console.error(err);
