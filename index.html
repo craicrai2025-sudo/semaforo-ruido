@@ -11,7 +11,7 @@
 
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
+      font-family: 'Liberation Sans', Arial, sans-serif;
       text-align: center;
       background: linear-gradient(to bottom right, #87cefa, var(--base-blue));
       transition: background 0.25s ease;
@@ -24,26 +24,34 @@
     }
     .hero{ text-align:center; }
 
-    /* Estilo blanco con contorno negro y sombra aplicado a todo */
-    .hero h1,
-    .hero h2,
-    .hero p {
-      color: #fff; /* texto blanco */
-      -webkit-text-stroke: 2px #000; /* contorno negro */
-      text-shadow: 2px 2px 6px rgba(0,0,0,0.6); /* sombra */
+    .hero h1 {
+      font-size: clamp(3.2rem, 6vw, 4.2rem);
+      font-weight: 900;
+      font-family: 'Liberation Sans', Arial, sans-serif;
+      color: #fff;
+      -webkit-text-stroke: 3px #000;
+      text-shadow: 3px 3px 8px rgba(0,0,0,0.7);
+      margin: 10px 0;
+    }
+
+    .hero h2 {
+      font-size: clamp(2rem, 4vw, 2.6rem);
+      font-weight: 800;
+      font-family: 'Liberation Sans', Arial, sans-serif;
+      color: #fff;
+      -webkit-text-stroke: 2px #000;
+      text-shadow: 2px 2px 6px rgba(0,0,0,0.6);
       margin: 8px 0;
     }
 
-    .hero h1{
-      font-size: clamp(2.8rem, 5vw, 3.8rem);
-      font-weight: 900;
-    }
-    .hero h2{
-      font-size: clamp(1.6rem, 2.6vw, 2rem);
-      font-weight: 800;
-    }
-    .hero p{
-      font-size: clamp(1rem, 2vw, 1.2rem);
+    .hero p {
+      font-size: clamp(1.4rem, 3vw, 1.8rem);
+      font-weight: 600;
+      font-family: 'Liberation Sans', Arial, sans-serif;
+      color: #fff;
+      -webkit-text-stroke: 1.5px #000;
+      text-shadow: 1px 1px 4px rgba(0,0,0,0.5);
+      margin: 6px 0;
     }
 
     /* ====== LAYOUT principal ====== */
@@ -58,7 +66,7 @@
       min-height: 620px;
     }
 
-    /* Barra de sonido fija a la derecha */
+    /* Barra de sonido fija a la izquierda */
     .bar-container {
       position: absolute;
       right: 150px;
@@ -77,7 +85,7 @@
     .bar {
       width: 100%;
       height: 0%;
-      background: #00c853; /* se reemplaza dinámicamente */
+      background: #00c853;
       transition: height 0.10s linear, background 0.10s linear;
     }
 
@@ -98,9 +106,9 @@
   </style>
 </head>
 <body>
-  <!-- ====== HERO ====== -->
+  <!-- ====== HERO con títulos ====== -->
   <div class="hero-wrap">
-    <div class="hero">
+    <div class="hero" id="hero">
       <h1>Bienvenidas y bienvenidos al CRAI UR</h1>
       <h2>Calmómetro</h2>
       <p>Bájale al ruido, súbele a la concentración</p>
@@ -120,7 +128,6 @@
   </div>
 
   <script>
-    // ===== Utilidades de color =====
     function lerp(a, b, t) { return a + (b - a) * t; }
     function mixRGB(c1, c2, t) {
       return [
@@ -171,9 +178,11 @@
 
         function frame() {
           analyser.getByteFrequencyData(dataArray);
+
           let sum = 0;
           for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
           const avg = sum / dataArray.length;
+
           const sensitivity = 1.5;
           const volume = Math.min(100, (avg / 255) * 100 * sensitivity);
 
@@ -209,7 +218,8 @@
 
         frame();
       } catch (err) {
-        alert('Error accediendo al micrófono: ' + err.name + ' - ' + err.message);
+        alert('Error accediendo al micrófono: ' + err.name + ' - ' + err.message +
+              '\n\n🔧 Revisa:\n1. Que uses HTTPS\n2. Que el micrófono esté permitido (candado en la URL)\n3. Que no esté ocupado por otro programa.');
         console.error(err);
       }
     })();
