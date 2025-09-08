@@ -24,26 +24,26 @@
     }
     .hero{ text-align:center; }
 
-    /* Estilo D: Blanco con contorno negro y sombra */
-    .hero.style-d h1{
+    /* Estilo blanco con contorno negro y sombra aplicado a todo */
+    .hero h1,
+    .hero h2,
+    .hero p {
+      color: #fff; /* texto blanco */
+      -webkit-text-stroke: 2px #000; /* contorno negro */
+      text-shadow: 2px 2px 6px rgba(0,0,0,0.6); /* sombra */
+      margin: 8px 0;
+    }
+
+    .hero h1{
       font-size: clamp(2.8rem, 5vw, 3.8rem);
       font-weight: 900;
-      margin: 10px 0;
-      color: #fff; /* blanco sólido */
-      -webkit-text-stroke: 2px #000; /* contorno negro */
-      text-shadow: 2px 2px 6px rgba(0,0,0,0.6); /* sombra suave */
     }
-    .hero.style-d h2{
+    .hero h2{
       font-size: clamp(1.6rem, 2.6vw, 2rem);
       font-weight: 800;
-      margin: 6px 0;
-      color: #222;
     }
-    .hero.style-d p{
+    .hero p{
       font-size: clamp(1rem, 2vw, 1.2rem);
-      opacity:.9;
-      margin: 4px 0 0;
-      color:#111;
     }
 
     /* ====== LAYOUT principal ====== */
@@ -51,7 +51,7 @@
       position: relative;
       display: flex;
       align-items: center;
-      justify-content: center;  /* centramos el lobo */
+      justify-content: center;
       width: 90%;
       margin: 0 auto 40px auto;
       gap: 32px;
@@ -90,7 +90,7 @@
       align-items: center;
     }
     #estadoImg {
-      width: 600px;       /* NO cambiamos el tamaño de la imagen */
+      width: 600px;
       max-width: 300vw;
       height: auto;
       user-select: none;
@@ -98,9 +98,9 @@
   </style>
 </head>
 <body>
-  <!-- ====== ACTIVAR style-d ====== -->
+  <!-- ====== HERO ====== -->
   <div class="hero-wrap">
-    <div class="hero style-d" id="hero">
+    <div class="hero">
       <h1>Bienvenidas y bienvenidos al CRAI UR</h1>
       <h2>Calmómetro</h2>
       <p>Bájale al ruido, súbele a la concentración</p>
@@ -137,7 +137,6 @@
     const BASE_BLUE = getComputedStyle(document.documentElement)
                       .getPropertyValue('--base-blue').trim() || "#d0e7ff";
 
-    // ===== Parpadeo de fondo en nivel peligro =====
     let blinkInterval = null;
     function startBlink() {
       if (blinkInterval) return;
@@ -156,7 +155,6 @@
       }
     }
 
-    // ===== Audio + Animación =====
     (async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -164,7 +162,7 @@
         const audioContext = new AudioCtx();
         const source = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
-        analyser.fftSize = 256; // potencia de 2 válida
+        analyser.fftSize = 256;
         source.connect(analyser);
 
         const dataArray = new Uint8Array(analyser.frequencyBinCount);
@@ -173,20 +171,14 @@
 
         function frame() {
           analyser.getByteFrequencyData(dataArray);
-
-          // Promedio simple para un "nivel" de 0..100
           let sum = 0;
           for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
           const avg = sum / dataArray.length;
-
-          // Normalizar a porcentaje
-          const sensitivity = 1.5; // ajusta la sensibilidad
+          const sensitivity = 1.5;
           const volume = Math.min(100, (avg / 255) * 100 * sensitivity);
 
-          // Altura de la barra
           barEl.style.height = volume + '%';
 
-          // Color progresivo
           let color;
           if (volume <= 50) {
             color = mixRGB(GREEN, YELLOW, volume / 50);
@@ -196,13 +188,11 @@
           const colorStr = rgbStr(color);
           barEl.style.background = colorStr;
 
-          // Fondo degradado dinámico (si no está parpadeando)
           if (!blinkInterval) {
             document.body.style.background =
               `linear-gradient(to bottom right, ${colorStr}, ${BASE_BLUE})`;
           }
 
-          // Imagen + parpadeo según umbrales
           if (volume <= 40) {
             if (!estadoImg.src.includes('verde.png')) estadoImg.src = 'imagenes/verde.png';
             stopBlink();
@@ -219,12 +209,10 @@
 
         frame();
       } catch (err) {
-        alert('Error accediendo al micrófono: ' + err.name + ' - ' + err.message +
-              '\n\n🔧 Revisa:\n1. Que uses HTTPS\n2. Que el micrófono esté permitido (candado en la URL)\n3. Que no esté ocupado por otro programa.');
+        alert('Error accediendo al micrófono: ' + err.name + ' - ' + err.message);
         console.error(err);
       }
     })();
   </script>
 </body>
 </html>
-
