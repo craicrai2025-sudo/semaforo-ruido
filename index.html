@@ -24,15 +24,16 @@
     }
     .hero{ text-align:center; }
 
-/* Estilo B: tarjeta “glass” */
-    .hero.style-b{
-      display:inline-block; padding: 14px 22px; border-radius: 18px;
-      background: rgba(255,255,255,.45); backdrop-filter: blur(8px);
-      box-shadow: 0 10px 30px rgba(0,0,0,.12);
+    /* Estilo C: mayúsculas con contorno y sombra */
+    .hero.style-c h1{
+      font-size: clamp(2.8rem,5.2vw,4.2rem);
+      font-weight: 900; text-transform: uppercase; letter-spacing:.04em;
+      color:#111; -webkit-text-stroke:1px rgba(255,255,255,.6);
+      text-shadow: 0 8px 24px rgba(0,0,0,.25);
+      margin: 12px 0 6px;
     }
-    .hero.style-b h1{ font-size: clamp(2.6rem,4.6vw,3.6rem); margin:0; font-weight:800; }
-    .hero.style-b h2{ font-size: clamp(1.1rem,2.1vw,1.5rem); margin:4px 0 2px; font-weight:700; color:#1a1a1a; }
-    .hero.style-b p{ margin:6px 0 0; opacity:.85; }
+    .hero.style-c h2{ font-size: clamp(1.2rem,2.4vw,1.6rem); font-weight:700; opacity:.95; margin:0 0 6px; }
+    .hero.style-c p{ margin:6px 0 0; opacity:.85; }
 
     /* ====== LAYOUT principal ====== */
     .container {
